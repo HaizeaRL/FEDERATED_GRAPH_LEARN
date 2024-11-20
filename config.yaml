@@ -1,0 +1,4 @@
+MQTT_BROKER: "mqtt.eclipseprojects.io"
+MQTT_PORT: 1883
+MQTT_TOPIC: "MSG"
+MQTT_KEEPALIVE: 60

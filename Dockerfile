@@ -1,5 +1,5 @@
 # Use a lightweight Python image
-FROM python:3.9-slim
+FROM python:3.9
 
 # Set the working directory inside the container
 WORKDIR /usr/local/app
@@ -9,7 +9,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code to the container
-COPY ./src/ ./src/
+COPY . .
 
 # Accept build arguments 
 ARG ROLE
