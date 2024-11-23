@@ -58,10 +58,8 @@ def obtain_json_list(folder_path):
     jsons = os.listdir(folder_path)  
     return jsons
     
-           
-    
-
-def extract_type_and_thread_from_path(path):
+   
+def extract_type_and_threadId_from_path(path):
     # normalize path
     normalized_path = os.path.normpath(path)
 
@@ -89,7 +87,7 @@ def preprocess_data(path, save_path):
             # Check if it contains `.json` files directly or process further
             if any(file.endswith(".json") for file in os.listdir(item_path)):
                 # Process this folder containing JSON files
-                msg_type, df_name = extract_type_and_thread_from_path(item_path)
+                msg_type, df_name = extract_type_and_threadId_from_path(item_path)
                 folders = obtain_json_folders(item_path)
 
                 # Initialize an empty DataFrame with defined columns
