@@ -22,6 +22,7 @@ import os
 import json
 import pandas as pd
 from datetime import datetime
+import re
 
 pd.set_option('display.max_columns', None)
 
@@ -32,18 +33,56 @@ def fomat_date (date_str):
     # Format to a more readable value
     return dt.strftime("%Y-%m-%d %H:%M:%S")
 
+# Function to remove screen names from text
+def remove_screen_names(text, screen_names):
+    # Remove all screen names (preceded by @) from the text
+    for screen_name in screen_names:
+        text = re.sub(r'@' + re.escape(screen_name), '', text)
+    return text
+
+def clean_text (data):   
+    
+    mentions = [{'id': str(mention['id']), 'name': mention['name'],
+                  'screen_name': mention['screen_name']} for mention in data["entities"]['user_mentions']]
+     
+    # remove author references from text:
+    if len(mentions)>0:
+        # Extract the screen names from the mentions dictionary
+        screen_names = [mention['screen_name'] for mention in mentions]
+        
+        # Cleaned text
+        cleaned_text = remove_screen_names(data["text"], screen_names)
+        
+        # Optionally, clean up extra spaces from the text
+        cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
+    else:
+        cleaned_text = data["text"]
+        
+    return mentions, cleaned_text
+        
+    
+        
+    
+
 def extract_data_and_add_to_table (df, data, msg_type):
+   
+    # Remove from text other authors references
+    mentions, cleaned_text = clean_text (data)       
+            
     # Create a new row dictionary
     new_row = {
         "id": str(data["id"]),
         "is_rumour": msg_type == "rumours",
-        "text": data["text"],        
+        "text": cleaned_text,        
         "in_reply_to_id":str(data["in_reply_to_status_id"]),
-        "author": data["user"]["screen_name"],    
+        "author": {"id": str(data["user"]["id"]), "name": data["user"]["name"],
+                "screen_name": data["user"]["screen_name"]
+            },
         "retweet_count": data["retweet_count"],
         "favorite_count": data["favorite_count"],
         "created_at": fomat_date(data["created_at"]),
-        "mentions": [{'id': str(mention['id']), 'name': mention['name']} for mention in data["entities"]['user_mentions']]
+        "mentions": mentions
+        
     }
     # Add the new row to the DataFrame
     df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)

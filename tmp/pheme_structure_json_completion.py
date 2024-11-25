@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Nov 23 15:58:10 2024
-
+Create each message thread structure json
 @author: jonma
 """
 
