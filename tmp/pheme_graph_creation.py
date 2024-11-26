@@ -9,13 +9,39 @@ import os
 import json
 import networkx as nx
 import pickle
+import matplotlib.pyplot as plt
+
+def plot_subgraph(graph, msg_id):
+    
+    # Get outgoing neighbors (neighbors the node points to)
+    outgoing_neighbors = list(graph.neighbors(msg_id))
+
+    # Get incoming neighbors (nodes that point to the node)
+    incoming_neighbors = list(graph.predecessors(msg_id))
+
+    # Combine the two lists to get all neighbors
+    all_neighbors = set(outgoing_neighbors + incoming_neighbors)   
+
+    # Create a subgraph with the message node and its direct neighbors
+    subgraph = graph.subgraph([msg_id] + list(all_neighbors))
+
+    # Get the node colors based on the 'color' attribute
+    node_colors = [data['color'] for _, data in subgraph.nodes(data=True)]
+
+    # Draw the subgraph
+    nx.draw(subgraph, with_labels=True, node_color=node_colors, 
+                   edge_color='gray', font_weight='bold', font_size = 6)
+    plt.title(f" Msg: {msg_id} relations")
+    plt.show()
+    
 
 # recursive graph creation
 def add_to_graph (graph, msg_id , msg, verbose):
     
     # if not exits create message node (attrs: text, date, rumour, color)
     if msg_id not in graph:
-        graph.add_node(msg_id, type = "msg", text = msg["text"],
+        graph.add_node(msg_id, node_type = "msg",
+                       text = msg["text"],
                        date = msg["created_at"],
                        rumour = msg["rumour"],
                        color = "lightgreen")
@@ -24,40 +50,46 @@ def add_to_graph (graph, msg_id , msg, verbose):
        
     
     # if not exist create author node (attrs, author, color)
-    if msg["author"]["id"] not in graph:
-        graph.add_node(msg["author"]["id"], type = "author", 
-                       author = msg["author"]["screen_name"],
+    if msg["author"]["screen_name"] not in graph:
+        graph.add_node(msg["author"]["screen_name"],
+                       node_type = "author", 
+                       author_id = msg["author"]["id"],
+                       name = msg["author"]["name"],
+                       rumour = msg["rumour"],
                        color = "skyblue")
         if verbose:
-            print(f"Author node with id:{msg['author']['id']} added.")
+            print(f"Author node with id:{msg['author']['screen_name']} added.")
         
        
     
     # relate message and author with "posted" relation
-    graph.add_edge(msg["author"]["id"], msg_id, relation="posted")
+    graph.add_edge(msg["author"]["screen_name"], msg_id, relation="posted")
     
     if verbose:
-        print(f"Posted relation between: {msg_id} - {msg['author']['id']} added.")
+        print(f"Posted relation between: {msg_id} - {msg['author']['screen_name']} added.")
    
     
     # Add mentions as edges
     for mention in msg.get("mentions", []):
         
         # add new mention if not exist to graph. author node (attrs, author, color)
-        if mention["id"] not in graph:
+        if mention["screen_name"] not in graph:
             
-            graph.add_node(mention["id"],type = "author", 
-                           author = mention["screen_name"],
+            graph.add_node(mention["screen_name"],
+                           node_type = "author",  
+                           author_id = mention["id"] ,
+                           name = mention["name"],
+                           rumour = msg["rumour"],
                            color = "skyblue")
             if verbose:
-                print(f"New mentioned author added: {mention['id']} added.")
+                print(f"New mentioned author added: {mention['screen_name']} added.")
             
             
         # create mention type relation
-        graph.add_edge(msg_id, mention["id"] ,relation="mention")   
+        graph.add_edge(msg_id, mention["screen_name"] ,relation="mention")   
         
         if verbose:
-            print(f"Mention relation between: {msg_id} -> {mention['id']} added.")        
+            print(f"Mention relation between: {msg_id} -> {mention['screen_name']} added.")        
         
        
         
@@ -69,7 +101,7 @@ def add_to_graph (graph, msg_id , msg, verbose):
         
        
         # create reply type relation
-        graph.add_edge(reply_id, msg_id, relation="replies", 
+        graph.add_edge(reply_id, msg_id, relation="replies",
                        retweet = reply["retweet_count"],
                        favourite = reply["favorite_count"])
         
@@ -101,44 +133,12 @@ for file in os.listdir(json_folder):
     if data:       
         for msg_id, msg in data.items():    
             # create messge relations
-            add_to_graph (graph, msg_id , msg, False)         
+            add_to_graph (graph, msg_id , msg, False)        
+            #plot_subgraph(graph, msg_id)
+            #input()
             
  
 # Save the graph to a file
 with open(os.path.join(graph_folder,'graph.pkl'), 'wb') as f:
     pickle.dump(graph, f)   
     
-with open(os.path.join(graph_folder,'graph.pkl'), 'rb') as f:
-    loaded_graph = pickle.load(f)    
-
-# NODOS SOLO DE RUMORES    
-rumour_nodes = [
-    node for node, attrs in loaded_graph.nodes(data=True) if attrs.get('rumour') == True
-]
-
-    
-'''
-LOAD GRAPH
-with open('graph.pkl', 'rb') as f:
-    loaded_graph = pickle.load(f)        
-            
-
-import matplotlib.pyplot as plt
-# Set the node color based on node type (message or author)
-node_color = []
-for node in graph.nodes():
-    if graph.nodes[node]['type'] == 'msg':
-        node_color.append('lightgreen')  # Color for message nodes
-    else:
-        node_color.append('skyblue')  # Color for author nodes
-
-# Create a layout for better visualization (spring layout)
-pos = nx.spring_layout(graph, seed=42)
-
-# Draw the graph with labels for nodes
-plt.figure()
-nx.draw(graph, pos, with_labels=True, node_size=500, node_color=node_color, font_size=8, font_weight='bold', arrowsize=10)
-
-# Display the graph
-plt.title("Message and Author Network")
-plt.show()'''
