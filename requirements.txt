@@ -5,4 +5,5 @@ zipfile36
 xtarfile
 pyarrow
 pandas
+chardet
 

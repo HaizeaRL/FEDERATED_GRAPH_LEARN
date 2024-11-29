@@ -33,35 +33,28 @@ if "_" in role:
 
         # select corresponding theme 
         theme = data_conf["themes"][id]  
-        print(f"Client{id}: Selected theme is: {theme} downloading...")        
+        print(f"Client{id}: Selected theme is: {theme}.")        
         
-        # create destionation folder to save data to analyze.
+        # create destination folder to save data to analyze.
         data_path = os.path.join(root_path, data_conf["data_path"])
         os.makedirs(data_path, exist_ok=True)
-
-        # unzip corresponding data
-        dpf.untar_specific_theme_data(data_conf["download_data_url"], data_path, theme)
-        print(f"Client{id}: Folder: {theme} and its subfolders extracted to {data_path}.")
-              
-        # prepare data for analysis
-        print(f"Client{id}: Preparing data for analysis. Step 1: cleaning...")
-
-        # 1- clean not desirable files if exists. Recursively        
-        root_path = os.path.join(data_path,"all-rnr-annotated-threads") # Entry point
-        dpf.clean_directory_recursively(root_path)
-        input()
-
-        # 2- Feature selection. Recursively  
-        print(f"Client{id}: Step 2: selecting and extracting features from messages ...")
-        # Example Execution
-        theme_path = os.path.join(root_path,theme)
-
+ 
         # create folder to save preprocess data
+        main_folder = "all-rnr-annotated-threads"
+        theme_path = os.path.join(os.path.join(data_path, main_folder),theme)
         out_folder = os.path.join(theme_path, "preprocess")
         os.makedirs(out_folder, exist_ok=True)
 
-        # Start processing
-        dpf.preprocess_data(theme_path, out_folder, False)
+        # create json save folder
+        json_out_folder = os.path.join(out_folder, "jsons")
+        os.makedirs(json_out_folder, exist_ok=True)
+
+        print(f"Client{id}: Download and prepare data for analysis.")
+        dpf.download_clean_preprocess_and_structure(data_conf, data_path, theme,
+                                            theme_path, out_folder,json_out_folder)
+        
+        print(f"Client{id}: Creating graph from structure jsons...")
+
         input()
         
 

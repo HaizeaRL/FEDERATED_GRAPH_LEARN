@@ -12,7 +12,7 @@ role_file = open(os.path.join(tmp_path,"role.txt"), "r")
 role = role_file.read().strip()
 role_file.close() 
 
-print("distpatcher:: ROLE:", role)
+print("Distpatcher:: ROLE:", role)
 
 # dispatch tasks according to role
 if role and "SERVER" in role:
