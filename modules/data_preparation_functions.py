@@ -1,39 +1,56 @@
-import tarfile
 import os
+import wget
+from pathlib import Path
+import zipfile
+import tarfile
 import json
 import pandas as pd
 from datetime import datetime
 import re
 
-
-# TODO: GET FILES TO DOWNLOAD FROM DATA_CONFIG FILE: DOWNLOAD_DATA_PATH
-# TODO: EXTRACT AND SAVE DESIRED DATA IN PROJECT: DATA_PATH
-def untar_specific_theme_data (tar_file_path, theme):
+def untar_specific_theme_data (file_url, tar_file_path, theme):
     """
-    Function that untar only the corresponding theme data.
+    Function that download data to the analysis from webpage,
+    and get only the corresponding theme data.
     
     Parameters:
+        file_url (str): Url to download the files.
         tar_file_path (str): where to find data tar file and where to download the data.
         theme (str): subfolder to untar. This name corresponds to client id position theme.
 
     Returns:
        None: untar specified folder in specified folder.
     """  
-
-    # complete folder to stract
-    folder_to_extract = f"all-rnr-annotated-threads/{theme}"
-
+   
     # determine destination directory. Same as the tar file's directory
-    destination_directory = os.path.dirname(tar_file_path)
+    destination_directory = tar_file_path
 
-    # open, find and extract corresponding theme data
-    with tarfile.open(tar_file_path, "r") as tar:
+    # get and download zip and save in specified destination path   
+    wget.download(file_url, destination_directory) 
+
+    # unzip zip file
+    zip_file_path = os.path.join(destination_directory, "6392078.zip")
+    print(f"\nUnziping {zip_file_path}...")
+    with zipfile.ZipFile(zip_file_path, "r") as zip_file:       
+        zip_file.extractall(destination_directory)
+
+    # remove after unzip
+    os.remove(zip_file_path) 
+
+    # Untar tar.gz file
+    tar_gz_file_path = os.path.join(destination_directory, "PHEME_veracity.tar.bz2")
+    folder_to_extract = f"all-rnr-annotated-threads/{theme}"
+    with tarfile.open(tar_gz_file_path, "r:gz") as tar:
         # Loop through all members in the tar file
         for member in tar.getmembers():
             # Check if the member starts with desired folder
             if member.name.startswith(folder_to_extract):
                 # Extract it to the destination directory
-                tar.extract(member, path=destination_directory)     
+                tar.extract(member, path=destination_directory)
+    
+    # remove after untar tar.gz file
+    os.remove(tar_gz_file_path) 
+  
 
 def detect_removal_files(folder_list):
     """

@@ -1,6 +1,8 @@
 paho-mqtt== 2.1.0
 PyYAML
+wget
+zipfile36
 xtarfile
-matplotlib
 pyarrow
 pandas
+

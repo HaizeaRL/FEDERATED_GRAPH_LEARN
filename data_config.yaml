@@ -1,4 +1,4 @@
-download_data_path: "https://figshare.com/ndownloader/articles/6392078/versions/1"
+download_data_url: "https://figshare.com/ndownloader/articles/6392078/versions/1"
 data_path: "data"
 themes:
   "1": charliehebdo-all-rnr-threads

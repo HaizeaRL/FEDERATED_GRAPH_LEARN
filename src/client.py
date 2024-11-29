@@ -33,20 +33,23 @@ if "_" in role:
 
         # select corresponding theme 
         theme = data_conf["themes"][id]  
-        print(f"Client{id}: Selected theme is: {theme} downloading...")
+        print(f"Client{id}: Selected theme is: {theme} downloading...")        
         
+        # create destionation folder to save data to analyze.
+        data_path = os.path.join(root_path, data_conf["data_path"])
+        os.makedirs(data_path, exist_ok=True)
+
         # unzip corresponding data
-        data_path = os.path.join(root_path,"data")
-        tar_file_path = os.path.join(data_path, "PHEME_veracity.tar")
-        dpf.untar_specific_theme_data(tar_file_path, theme)
-        print(f"Client{id}: Folder: {theme} and its subfolders exracted to data_path.")
-       
+        dpf.untar_specific_theme_data(data_conf["download_data_url"], data_path, theme)
+        print(f"Client{id}: Folder: {theme} and its subfolders extracted to {data_path}.")
+              
         # prepare data for analysis
         print(f"Client{id}: Preparing data for analysis. Step 1: cleaning...")
 
         # 1- clean not desirable files if exists. Recursively        
         root_path = os.path.join(data_path,"all-rnr-annotated-threads") # Entry point
         dpf.clean_directory_recursively(root_path)
+        input()
 
         # 2- Feature selection. Recursively  
         print(f"Client{id}: Step 2: selecting and extracting features from messages ...")
