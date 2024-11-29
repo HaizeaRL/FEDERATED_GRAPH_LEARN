@@ -1,0 +1,12 @@
+download_data_path: "https://figshare.com/ndownloader/articles/6392078/versions/1"
+data_path: "data"
+themes:
+  "1": charliehebdo-all-rnr-threads
+  "2": ebola-essien-all-rnr-threads
+  "3": ferguson-all-rnr-threads
+  "4": germanwings-crash-all-rnr-threads
+  "5": gurlitt-all-rnr-threads
+  "6": ottawashooting-all-rnr-threads
+  "7": prince-toronto-all-rnr-threads
+  "8": putinmissing-all-rnr-threads
+  "9": sydneysiege-all-rnr-threads

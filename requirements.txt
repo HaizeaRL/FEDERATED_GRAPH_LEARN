@@ -1,2 +1,6 @@
 paho-mqtt== 2.1.0
 PyYAML
+xtarfile
+matplotlib
+pyarrow
+pandas
