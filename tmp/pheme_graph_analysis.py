@@ -1,70 +1,23 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Nov 26 11:46:33 2024
+Created on Fri Nov 29 15:10:51 2024
 
-@author: jonma
+@author: hrumayor
 """
 
 import os
 import pickle
 import networkx as nx
-import matplotlib.pyplot as plt
+from datetime import datetime
+import concurrent.futures
 
-root_path = "C:/DATA_SCIENCE_HAIZEA/tmp/all-rnr-annotated-threads/charliehebdo-all-rnr-threads"
-preprocess_folder = os.path.join(root_path,"preprocess")
-json_folder = os.path.join(preprocess_folder, "jsons")
-graph_folder = os.path.join(root_path, "graph")
-
-with open(os.path.join(graph_folder,'graph.pkl'), 'rb') as f:
-    g = pickle.load(f)    
+def extract_hour_from_date (date_string):
     
+    # Parse the string into a datetime object
+    date_object = datetime.strptime(date_string, '%Y-%m-%d %H:%M:%S')
 
-def plot_subgraph(graph, msg_id, type_in_out):
-    
-    neighbors = None
-    if type_in_out == "OUT":
-        # Get outgoing neighbors (neighbors the node points to)
-        neighbors = list(graph.neighbors(msg_id))
-    elif type_in_out == "IN":
-        # Get incoming neighbors (nodes that point to the node)
-        neighbors = list(graph.predecessors(msg_id))
-
-
-    # Create a subgraph with the message node and its direct neighbors
-    subgraph = graph.subgraph([msg_id] + list(neighbors))
-
-    # Get the node colors based on the 'color' attribute
-    node_colors = [data['color'] for _, data in subgraph.nodes(data=True)]
-
-    # Draw the subgraph
-    nx.draw(subgraph, with_labels=True, node_color=node_colors, 
-                   edge_color='gray', font_weight='bold', font_size = 6)
-    plt.title(f" Msg: {msg_id} relations")
-    plt.show()
-    
-def determine_messages_per_author(authors):
-    
-    author_messages = {}
-
-    # Iterate through each author in the graph
-    for author in authors:
-        # Get the messages posted by the author
-        posted_messages = list(g.neighbors(author))
-        
-        # Consider only distinct messages (unique messages)
-        distinct_messages = set(posted_messages)
-        
-        # Store the number of distinct messages for the author
-        author_messages[author] = len(distinct_messages)       
-
-
-    return author_messages
-
-
-def order_dictionary (in_reverse, dictionary):
-    
-    return {k: v for k, v in sorted(dictionary.items(), key=lambda item: item[1], reverse=in_reverse)}
-
+    # Extract the hour
+    return date_object.hour
     
 def calculate_reverse_propagation(graph, msg_id, visited):
     """
@@ -93,46 +46,53 @@ def calculate_reverse_propagation(graph, msg_id, visited):
     # Include current message's immediate predecessors in the count
     return len(msg_predecessors) + propagation_count
 
-def calculate_mentions (messages):
-    # Dictionary to store the count of mentions for each author
-    mentioned_authors_count = {}
+def has_mentions(graph, msg_id):
+    """
+    Determine if a message is original or created in response to another message.
+    
+    :param graph: The graph.
+    :param msg_id: The message ID to check.
+    :return: True if the message is original, False if it is a response.
+    """
+    # Check if the message has incoming edges with "replies" relation
+    incoming_replies = [
+        edge for edge in graph.in_edges(msg_id, data=True)
+        if edge[2].get("relation") == "replies"
+    ]
+    return len(incoming_replies) == 0  # Original if no incoming replies
 
-    # Iterate through messages
-    for msg_id in messages:
-        # Get all neighbors of the current message with a "mention" relation
-        mentioned_authors = [
-            neighbor for neighbor in g.neighbors(msg_id)
-            if g.nodes[neighbor].get("node_type") == "author" and
-               g.edges[msg_id, neighbor].get("relation") == "mention"
-        ]
+def message_has_mentions(msg_id):
+    
+    # Get only author type sucessors
+    mentions = [
+        neighbor for neighbor in g.neighbors(msg_id)
+        if g.nodes[neighbor].get("node_type") == "author" and
+           g.edges[msg_id, neighbor].get("relation") == "mention"
+    ]    
         
-        # Count mentions for each author
-        for author in mentioned_authors:
-            if author not in mentioned_authors_count:
-                mentioned_authors_count[author] = 0
-            mentioned_authors_count[author] += 1
-            
-    #return result
-    return mentioned_authors_count
+    return mentions
 
+def determine_message_author(msg_id):
+    
+    # Get only author type predecessors
+    author = [
+        predecessor for predecessor in g.predecessors(msg_id)
+        if g.nodes[predecessor].get("node_type") == "author" and
+           g.edges[predecessor, msg_id].get("relation") == "posted"
+    ]
+    
+    return author[0]
+    
 
-def calculate_replies (messages):
-    # Dictionary to store the count of replies of each message.
-    replied_msg_data = {}
-
-    # Iterate through messages
-    for msg_id in messages:
-        # Obtain reply edges to this message
-        reply_edges = [
-            edge for edge in g.in_edges(msg_id, data=True)
-            if edge[2].get("relation") == "replies"
-        ]
-        
-        # count and add to dictionary number of replies
-        replied_msg_data[msg_id] = len(reply_edges)
-        
-    # return result
-    return replied_msg_data
+def determine_message_is_created_as_reply(msg_id):
+    
+    # Get message type sucesor
+    msg = [
+        neighbor for neighbor in g.neighbors(msg_id)
+        if g.nodes[neighbor].get("node_type") == "msg" and
+           g.edges[msg_id, neighbor].get("relation") == "replies"
+    ] 
+    return msg
 
 def calculate_retweets (message):
     
@@ -159,7 +119,7 @@ def calculate_favourites (message):
     favourite_data = {}
 
      # Iterate through messages
-    for msg_id in rumour_msg:
+    for msg_id in message:
         # Obtain reply edges to this message
         reply_edges = [
             edge for edge in g.in_edges(msg_id, data=True)
@@ -172,165 +132,122 @@ def calculate_favourites (message):
     # return the result
     return favourite_data
 
-def print_text_dict(l, msg):    
-    for msg in l:
-        print(msg)
-        print(f"Text: {g.nodes[msg]['text']}.")
-    
 
+def calculate_author_influence(graph, authors):
+    # Calculate betweenness centrality for the entire graph
+    centrality = nx.betweenness_centrality(graph, normalized=True)
+
+    # Filter and get the betweenness centrality for only the author nodes
+    author_influence = {author: centrality[author] for author in authors if author in centrality}
+    
+    return author_influence
+
+root_path = "C:/DATA_SCIENCE_HAIZEA/tmp/all-rnr-annotated-threads/charliehebdo-all-rnr-threads"
+preprocess_folder = os.path.join(root_path,"preprocess")
+json_folder = os.path.join(preprocess_folder, "jsons")
+graph_folder = os.path.join(root_path, "graph")
+
+with open(os.path.join(graph_folder,'graph.pkl'), 'rb') as f:
+    g = pickle.load(f)    
+    
     
 # GRAPH ANALYSIS 
-# a) How many messages in the graph?
 total_msg = [node for node, attrs in g.nodes(data=True) if attrs.get("node_type") == "msg"]
 print(f"The graph has in total: {len(total_msg)} messages")
 
-# b) How many rumours in the graph?
-rumour_msg = [node for node, attrs in g.nodes(data=True) if attrs.get('rumour') == True \
-              and attrs.get("node_type") == "msg"]
+# Define futures to handle concurrent execution
+with concurrent.futures.ThreadPoolExecutor() as executor:
+    # Start calculating retweets and favourites concurrently
+    retweets_future = executor.submit(calculate_retweets, total_msg)
+    favourites_future = executor.submit(calculate_favourites, total_msg)
+    
+    # While the retweets and favourites are being calculated, proceed with other tasks
+    propagation_dict = {}
+    for msg_id in total_msg:
+        visited = set()
+        propagation_dict[msg_id] = calculate_reverse_propagation(g, msg_id, visited)
+    
+    # Get the results of the retweets and favourites once they're done
+    retweets_dict = retweets_future.result()
+    favourites_dict = favourites_future.result()
+    
+    # Extract author list and calculate author influence concurrently
+    total_authors = [node for node, attrs in g.nodes(data=True) if attrs.get("node_type") == "author"]
+    print(f"The graph has in total: {len(total_authors)} authors.")
+    
+    author_influence_future = executor.submit(calculate_author_influence, g, total_authors)
+    author_influence_dict = author_influence_future.result()
+    print("Authors influence calculated.")
 
-print(f"From total: {len(total_msg)} messages, {len(rumour_msg)} are rumours related ({round((len(rumour_msg) / len(total_msg)) *100,2)}%)")
 
-# c) How many authors in the graph?
-total_authors = [node for node, attrs in g.nodes(data=True) if attrs.get("node_type") == "author"]
-print(f"The graph has in total: {len(total_authors)} authors")
+# TODO: TEXT MINING
+# TODO: OPTIMIZE calculate_author_influence execution in parallel
 
-# d) How many of them are involved with rumours
-
-rumour_author = [node for node, attrs in g.nodes(data=True) if attrs.get('rumour') == True \
-              and attrs.get("node_type") == "author"]
-print(f"From total: {len(total_authors)} authors, {len(rumour_author)} are rumours related ({round((len(rumour_author) / len(total_authors)) *100,2)})%")
-  
-
-# e) Top 10 of rumours messages that most propagate
-
-# Calculate propagation for each rumour message
-propagation_dict = {}
-for msg_id in rumour_msg:
-    visited = set()
-    propagation_dict[msg_id] = calculate_reverse_propagation(g, msg_id, visited)
-    #print(f"msg:{msg_id} propagates to {propagation_dict[msg_id]} messages.")
-  
+# Get information for each message
+for msg_id in total_msg:
+    
+    print("Message_id:", msg_id , "data: ", g.nodes[msg_id])
+    
+    # message creation hour
+    msg_hour = extract_hour_from_date(g.nodes[msg_id]["date"])
+    print ("Hour:", msg_hour)
+    
+    # is rumour or not
+    is_rumour = g.nodes[msg_id]["rumour"]
+    print ("is_rumour:", is_rumour)
+    
+    # text information: main keys, sentiment and if has links it
+    text = g.nodes[msg_id]["text"]
+    print ("text:", text)
+    
+    # propagate to N message
+    propagate_to_msg = propagation_dict[msg_id]
+    print ("propagate_to_msg:", propagate_to_msg)        
+    
+    # who is the author?
+    author = determine_message_author(msg_id)
+    print ("author:", author)
+    
+    # is the author influyent in the graph?
+    author_influence = author_influence_dict[author]
+    print ("author_influence:", author_influence)
+    
+    # has mentions
+    has_mentions = False
+    mentions = message_has_mentions(msg_id)
+    if len(mentions)>0:
+        has_mentions = True
+    print ("has_mentions:", has_mentions)
+    print ("mentions:", len(mentions))
+    
+    # message created as reply
+    is_reply_message = False
+    if len(determine_message_is_created_as_reply(msg_id)) > 0:
+        is_reply_message = True
+    print ("is_reply_message:", is_reply_message)
+        
+    # message retweeted
+    retweets = retweets_dict[msg_id]
+    print ("retweets:", retweets)
+    
+    # message favourited
+    favourites = favourites_dict[msg_id]
+    print ("favourites:", favourites)
    
-# sort dictionary by value (in reverse form)
-sorted_propagation_dict = order_dictionary (True, propagation_dict)
-
-# select top 10 and visualize the result
-top_10_propagated_msg= list(sorted_propagation_dict)[:10]
-print("\nThese 10 rumour msgs are propagated more:")
-for msg in top_10_propagated_msg:
-    print(f"\nMessage:{msg} propagated to {propagation_dict[msg]} messages.")
-    print(f"Text: {g.nodes[msg]['text']}.")
-  
-  
-
-# f) Top 10 of authors that most rumours propagate
-# determine rumour messages per author
-message_per_author = determine_messages_per_author(rumour_author)
-
-# sort dictionary by value (in reverse form)
-sorted_message_per_author = order_dictionary (True, message_per_author)
-
-# select top 10 and visualize the result
-top_10_authors= list(sorted_message_per_author)[:10]
-print("\nThese 10 authors are who most rumours propagate:")
-for auth in top_10_authors:
-    print(f"Author:{auth} -> {len(list(g.neighbors(auth)))} messages.")
-    #plot_subgraph(g ,auth , "OUT")
-
-
-# g) Top 10 authors that are most mentioned in the rumoured messages.
-
-# calculate author mentions in rumours
-mentioned_authors_count = calculate_mentions(rumour_msg)
-
-# Sort authors by the number of mentions (descending)
-sorted_mentioned_authors = order_dictionary(True, mentioned_authors_count)
-
-# Select the top 10 authors and display their mention counts
-top_10_mentioned_authors = list(sorted_mentioned_authors.items())[:10]
-print("\nTop 10 authors most mentioned in rumoured messages:")
-for author, count in top_10_mentioned_authors:
-    print(f"Author: {author} -> {count} mentions.")
-
-
-# h) Top 10 of rumours messages that most reactions or replies receive.
-
-# calculate message replies in rumour type messages
-replied_msg_data = calculate_replies (rumour_msg)
-
-# Ordenar el diccionario por el número de respuestas en orden descendente
-sorted_replied_msg_data = order_dictionary(True, replied_msg_data)
-
-# Seleccionar el top 10
-top_10_replied_msg = list(sorted_replied_msg_data)[:10]
-
-# Mostrar los resultados
-print("These 10 msgs received most reactions or replies:")
-for msg in top_10_replied_msg:
-    print(f"\nMessage: {msg} -> {replied_msg_data[msg]} replies")
-    print(f"Text: {g.nodes[msg]['text']}")
     
-
-# i) Top 10 of rumours messages that are the most retweeted
-# calculate retweets in rumour type messages
-retweet_data = calculate_retweets (rumour_msg)
-
-# Ordenar por la cantidad de retweets en orden descendente
-sorted_retweet_data = order_dictionary(True, retweet_data)
-
-# Seleccionar el top 10
-top_10_retweeted_msgs = list(sorted_retweet_data)[:10]
-
-# Mostrar resultados
-print("Top 10 messages that are most retweeted:")
-for msg in top_10_retweeted_msgs:
-    print(f"\nMessage: {msg} -> Retweets: {retweet_data[msg]}")
-    print(f"Text: {g.nodes[msg]['text']}")
+    input()
 
 
-# j) Top 10 of rumours messages that are the most favourited
-
-# calculate retweets in rumour type messages
-favourite_data = calculate_favourites (rumour_msg)
-
-# Ordenar por la cantidad de retweets en orden descendente
-sorted_favourite_data = order_dictionary(True, favourite_data)
-
-# Seleccionar el top 10
-top_10_favourite_msgs = list(sorted_favourite_data)[:10]
-
-# Mostrar resultados
-print("Top 10 messages that are most favourite:")
-for msg in top_10_favourite_msgs:
-    print(f"\nMessage: {msg} -> Favourites: {favourite_data[msg]}")
-    print(f"Text: {g.nodes[msg]['text']}")
-
-
-# j) Most influent author
-def calculate_author_influence(graph, authors):
-    # Calculate centrality metrics for authors
-    centrality = nx.betweenness_centrality(graph, normalized=True)  # Example: betweenness centrality
-    
-    # Get the centrality values for authors
-    author_influence = {author: centrality[author] for author in authors if author in centrality}
-    
-    # Sort by centrality (descending order)
-    sorted_author_influence = sorted(author_influence.items(), key=lambda x: x[1], reverse=True)
-    
-    return sorted_author_influence
-
-# Calculate and print the influence of authors
-author_influence = calculate_author_influence(g, rumour_author)
-
-# Display top 10 most influential authors
-print("Top 10 most influential authors in the network:")
-for author, influence in author_influence[:10]:
-    print(f"Author: {author}, Influence (Betweenness Centrality): {influence}")
-
-
-# j) Period of time of most messages are send.
-
-# k) Period of time of most rumour messages are send.
-
-# l) Key words of rumours & emotions of those rumours.
-
+'''  
+- noiz bidalia
+- originala dan
+- erantzuna dan
+- retweeteatu dan
+- faborito dan
+- zenbat mezu sortarazi ditxun
+- mentzioak dauzkan
+- zein autoreena dan
+- autorea influyentea ote dan
+- zein hitz klabe dauzkan, zer sentimentu daukan, loturarik ote daukan
+- rumorea dan ala ez
+'''

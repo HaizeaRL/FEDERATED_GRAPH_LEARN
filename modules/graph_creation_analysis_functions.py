@@ -24,7 +24,6 @@ def add_to_graph (graph, msg_id , msg, verbose):
                        node_type = "author", 
                        author_id = msg["author"]["id"],
                        name = msg["author"]["name"],
-                       rumour = msg["rumour"],
                        color = "skyblue")
         if verbose:
             print(f"Author node with id:{msg['author']['screen_name']} added.")
@@ -47,7 +46,6 @@ def add_to_graph (graph, msg_id , msg, verbose):
                            node_type = "author",  
                            author_id = mention["id"] ,
                            name = mention["name"],
-                           rumour = msg["rumour"],
                            color = "skyblue")
             if verbose:
                 print(f"New mentioned author added: {mention['screen_name']} added.")
