@@ -12,6 +12,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Import the module
 from modules import mqtt_functions as mqttf
 from modules import data_preparation_functions as dpf
+from modules import graph_creation_analysis_functions as gcaf
 
 # create corresponding paths
 root_path = "/usr/local/app/"
@@ -49,11 +50,22 @@ if "_" in role:
         json_out_folder = os.path.join(out_folder, "jsons")
         os.makedirs(json_out_folder, exist_ok=True)
 
+        # create graph save folder
+        graph_folder = os.path.join(out_folder, "graph")
+        os.makedirs(graph_folder, exist_ok=True)
+
+        # download and prepare data
         print(f"Client{id}: Download and prepare data for analysis.")
         dpf.download_clean_preprocess_and_structure(data_conf, data_path, theme,
                                             theme_path, out_folder,json_out_folder)
         
+        # create message relation graph
         print(f"Client{id}: Creating graph from structure jsons...")
+        gcaf.create_and_save_graph(json_out_folder, graph_folder, False)
+
+        # analyze graph to obtain patterns
+        print(f"Client{id}: Analysing graph to obtain patterns...")       
+        
 
         input()
         

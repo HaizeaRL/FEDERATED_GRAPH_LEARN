@@ -6,4 +6,5 @@ xtarfile
 pyarrow
 pandas
 chardet
+networkx
 

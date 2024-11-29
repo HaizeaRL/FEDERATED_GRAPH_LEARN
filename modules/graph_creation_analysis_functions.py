@@ -1,39 +1,8 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Nov 25 15:20:18 2024
-
-@author: jonma
-"""
-
+# GRAPH RELATED FUNCTIONS
 import os
 import json
 import networkx as nx
 import pickle
-import matplotlib.pyplot as plt
-
-def plot_subgraph(graph, msg_id):
-    
-    # Get outgoing neighbors (neighbors the node points to)
-    outgoing_neighbors = list(graph.neighbors(msg_id))
-
-    # Get incoming neighbors (nodes that point to the node)
-    incoming_neighbors = list(graph.predecessors(msg_id))
-
-    # Combine the two lists to get all neighbors
-    all_neighbors = set(outgoing_neighbors + incoming_neighbors)   
-
-    # Create a subgraph with the message node and its direct neighbors
-    subgraph = graph.subgraph([msg_id] + list(all_neighbors))
-
-    # Get the node colors based on the 'color' attribute
-    node_colors = [data['color'] for _, data in subgraph.nodes(data=True)]
-
-    # Draw the subgraph
-    nx.draw(subgraph, with_labels=True, node_color=node_colors, 
-                   edge_color='gray', font_weight='bold', font_size = 6)
-    plt.title(f" Msg: {msg_id} relations")
-    plt.show()
-    
 
 # recursive graph creation
 def add_to_graph (graph, msg_id , msg, verbose):
@@ -67,8 +36,7 @@ def add_to_graph (graph, msg_id , msg, verbose):
     
     if verbose:
         print(f"Posted relation between: {msg_id} - {msg['author']['screen_name']} added.")
-   
-    
+       
     # Add mentions as edges
     for mention in msg.get("mentions", []):
         
@@ -90,9 +58,7 @@ def add_to_graph (graph, msg_id , msg, verbose):
         
         if verbose:
             print(f"Mention relation between: {msg_id} -> {mention['screen_name']} added.")        
-        
-       
-        
+               
     # Recursively process replies
     for reply_id, reply in msg.get("replies", {}).items():
         
@@ -107,38 +73,26 @@ def add_to_graph (graph, msg_id , msg, verbose):
         
         if verbose:
             print(f"Replay relation between: {reply_id} -> {msg_id} added.")
-     
 
-# Example Execution
-root_path = "C:/DATA_SCIENCE_HAIZEA/tmp/all-rnr-annotated-threads/charliehebdo-all-rnr-threads"
-preprocess_folder = os.path.join(root_path,"preprocess")
-json_folder = os.path.join(preprocess_folder, "jsons")
-graph_folder = os.path.join(root_path, "graph")
-os.makedirs(graph_folder, exist_ok=True)
-       
+def create_and_save_graph(json_folder, graph_folder, verbose):
+    # Create a directed graph
+    graph = nx.DiGraph()
 
-# Create a directed graph
-graph = nx.DiGraph()
-
-# read each sctructure json and add to graph
-for file in os.listdir(json_folder):
-    
-    print("FILE:", file)
-        
-    # open each json file
-    with open(os.path.join(json_folder,file), 'r') as file:
-        data = json.load(file)
-        
-    # read msg jsons
-    if data:       
-        for msg_id, msg in data.items():    
-            # create messge relations
-            add_to_graph (graph, msg_id , msg, False)        
-            #plot_subgraph(graph, msg_id)
-            #input()
+    # read each sctructure json and add to graph
+    for file in os.listdir(json_folder):        
+        if verbose:
+            print("FILE:", file)            
+        # open each json file
+        with open(os.path.join(json_folder,file), 'r') as file:
+            data = json.load(file)
             
- 
-# Save the graph to a file
-with open(os.path.join(graph_folder,'graph.pkl'), 'wb') as f:
-    pickle.dump(graph, f)   
+        # read msg jsons
+        if data:       
+            for msg_id, msg in data.items():    
+                # create messge relations
+                add_to_graph (graph, msg_id , msg, verbose)   
+                
     
+        # Save the graph to a file
+        with open(os.path.join(graph_folder,'graph.pkl'), 'wb') as f:
+            pickle.dump(graph, f)   
