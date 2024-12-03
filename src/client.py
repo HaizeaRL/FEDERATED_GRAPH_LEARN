@@ -5,6 +5,7 @@ import json
 import yaml
 from pathlib import Path
 import sys
+import pickle
 
 # Add the parent directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -25,6 +26,9 @@ role_file.close()
 
 # read data_config file
 data_conf = yaml.safe_load(Path(os.path.join(root_path,"data_config.yaml")).read_text())
+
+# read config file
+conf = yaml.safe_load(Path(os.path.join(root_path,"config.yaml")).read_text())
 
 # obtain id and execute code
 id = None
@@ -65,14 +69,22 @@ if "_" in role:
 
         # analyze graph to obtain patterns
         print(f"Client{id}: Analysing graph to obtain patterns...")       
+        # recover graph
+        with open(os.path.join(graph_folder, 'graph.pkl'), 'rb') as f:
+               graph = pickle.load(f)
+
+        # get information and save in a big file
+        gcaf.get_msg_information(graph, data_path)
+
+        # split and zip file in smaller data batches
+        print(f"Client{id}: Preparing data to be send to the server...")
+
+        # Send splitted and zipped data to the server
+        print(f"Client{id}: Sending data to the server...")
         
+        '''
 
-        input()
         
-
-
-        # READ DATA FROM CONFIG.YAML
-        conf = yaml.safe_load(Path(os.path.join(root_path,"config.yaml")).read_text())
 
         # CREATE CLIENT AND CONNECT TO PUBLIC BROKER
         mqttc = mqttf.create_mqtt_client(conf)
@@ -91,5 +103,5 @@ if "_" in role:
             mqttc.publish(conf["MQTT_TOPIC"], message)
             print(f"Published {message} in {conf['MQTT_TOPIC']} topic.")
                 
-            time.sleep(1)
+            time.sleep(3)'''
 

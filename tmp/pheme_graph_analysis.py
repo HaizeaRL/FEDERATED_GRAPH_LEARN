@@ -180,8 +180,6 @@ with concurrent.futures.ThreadPoolExecutor() as executor:
     print("Authors influence calculated.")
 
 
-# TODO: TEXT MINING
-# TODO: OPTIMIZE calculate_author_influence execution in parallel
 
 # Get information for each message
 for msg_id in total_msg:

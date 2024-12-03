@@ -11,3 +11,6 @@ docker run -it --rm -v ${PWD}:/app servidor /bin/bash
 
 # Comando to run por su cuenta
 docker run -it --rm -v ${PWD}:/app servidor
+
+# justification
+the server has trained a federated learning model to detect patterns in the diffusion of rumors in messages. The model can identify key features such as propagation, author, mentions, emotions, and other related factors. Although the results are not returned to the client in this pilot phase, in future iterations, they could be used to classify messages as rumors or not, based on the patterns learned.

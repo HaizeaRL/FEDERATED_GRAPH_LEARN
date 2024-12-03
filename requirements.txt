@@ -7,4 +7,5 @@ pyarrow
 pandas
 chardet
 networkx
+textblob
 
