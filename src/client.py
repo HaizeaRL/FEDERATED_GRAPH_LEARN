@@ -74,34 +74,22 @@ if "_" in role:
                graph = pickle.load(f)
 
         # get information and save in a big file
-        gcaf.get_msg_information(graph, data_path)
+        file_path = gcaf.get_msg_information(graph, data_path)
 
         # split and zip file in smaller data batches
         print(f"Client{id}: Preparing data to be send to the server...")
 
+        # create send_folder to save splitted folder
+        send_folder = os.path.join(data_path, "files_to_send")
+        os.makedirs(send_folder, exist_ok=True)
+
+        # split data and save zipped to be send
+        dpf.split_and_zip_files(file_path, send_folder, theme)
+ 
         # Send splitted and zipped data to the server
         print(f"Client{id}: Sending data to the server...")
+        mqttf.find_and_send_msg(conf, send_folder, f"Client_{id}")
+        print(f"Client{id}: END.")
         
-        '''
-
-        
-
-        # CREATE CLIENT AND CONNECT TO PUBLIC BROKER
-        mqttc = mqttf.create_mqtt_client(conf)
-              
-        while True:
-
-            # PREPARE MESSAGE
-            # create and send periodically a message
-            n = random.randint(1, 200)
-
-            # compose and create sending json
-            update = {"Client": f"Client_{id}", "value": n}
-            message = json.dumps(update)
-            
-            # SEND MESSAGE
-            mqttc.publish(conf["MQTT_TOPIC"], message)
-            print(f"Published {message} in {conf['MQTT_TOPIC']} topic.")
-                
-            time.sleep(3)'''
+       
 

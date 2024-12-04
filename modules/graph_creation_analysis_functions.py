@@ -302,8 +302,10 @@ def analyze_and_tokenize_text(text):
     # Remove multiple spaces from text
     new_text = re.sub("\\s+", ' ', new_text)
 
-    # Find and remove stop words like prepositions
-    stop_words = {'also', 'at', 'to', 'for', 'in', 'on', 'by', 'with', 'as', 'from', 'of', 'about',"a", "an", "that"}
+    # Find and remove stop words like prepositions, 
+    stop_words = {'also', 'at', 'to', 'for', 'in', 'on', 'by', 'with', 'as', 'from', 'of', 'about',"a", "an", "that",
+                  'the', 'but', 'is','were', 'you', 'me', 'they', 'which', "we're", "that's", "are", "or", "do", "did",
+                  "isn't",'am', "I", 'us'}
     new_text = [token for token in new_text.split() if token not in stop_words and len(token) > 1]
 
     # Return tokens, whether has links, whether has hashtags, and the hashtags in it
@@ -385,4 +387,5 @@ def get_msg_information(graph, save_path):
     filename = "msg_summary.parquet"
     df.to_parquet(os.path.join(save_path, filename), engine ="pyarrow")
     print(f"\tMsg summary saved in : {os.path.join(save_path, filename)}")
+    return os.path.join(save_path, filename)
 

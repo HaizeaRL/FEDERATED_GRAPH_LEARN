@@ -18,6 +18,7 @@ conf = yaml.safe_load(Path(os.path.join(root_path,"config.yaml")).read_text())
 mqttc = mqttf.create_mqtt_client(conf)
 
 # SUSCRIBE AND START LISTENING MESSAGES
+print("Server: waiting for messages...")
 while True:
     mqttc.loop_start()
     mqttc.subscribe(conf["MQTT_TOPIC"])

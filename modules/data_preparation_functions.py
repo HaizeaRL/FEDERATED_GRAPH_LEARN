@@ -398,7 +398,7 @@ def complete_structure_json(prep_folder, save_folder):
     Converts message data from Parquet files into a structured JSON format, 
     organizing each message and its replies hierarchically.
 
-    Args:
+    Parameters:
         prep_folder (str): Path to the folder containing the Parquet files. 
                            Each file represents messages for a specific root message.
         save_folder (str): Path to the folder where the structured JSON files will be saved.
@@ -429,7 +429,7 @@ def download_clean_preprocess_and_structure(data_conf, data_path, theme,
     Function that handles the complete pipeline for downloading, cleaning, preprocessing, and 
     structuring message data into hierarchical JSON structures.
 
-    Args:
+    Parameters:
         data_conf (dict): Configuration for downloading data, containing the key "download_data_url" 
                           for the URL of the data to be downloaded.
         data_path (str): Path where the downloaded data will be extracted.
@@ -463,7 +463,40 @@ def download_clean_preprocess_and_structure(data_conf, data_path, theme,
     # 3- Msg structure relation json creation. Recursively.
     complete_structure_json(out_folder, json_out_folder)
    
+def split_and_zip_files (file_path, save_path, theme):
+    """
+    Function that chunks data into smaller pieces and zips each chunk to be sent.
 
+    Parameters:      
+      file_path (str): Path where df filename is saved.
+      save_path (str): Directory to save the zipped files.
+      theme (str): Theme where data belongs to use as filename.
+
+    Returns:
+      The files are saved in zip form.
+    """
+
+    # recover saved data
+    df = pd.read_parquet(file_path, engine = "pyarrow")
+    
+    # create file chunks
+    chunks = [df.iloc[i:i + 10000] for i in range(0, len(df), 10000)]
+    
+    # zip file chunks
+    for idx, chunk in enumerate(chunks):
+        # compose filenames
+        file_name = f'{theme.split("-")[0]}_{idx}.csv'
+        zip_name = f'{theme.split("-")[0]}_{idx}.zip'
+
+        # Save each chunk as CSV file
+        chunk.to_csv(os.path.join(save_path,file_name), index=False) 
+
+        # Compress each file into its own ZIP archive
+        with zipfile.ZipFile(os.path.join(save_path,zip_name), 'w') as zipf:
+            zipf.write(os.path.join(save_path,file_name)) # csv file path
+
+        # remove csv file
+        os.remove(os.path.join(save_path,file_name)) 
 
 
 
