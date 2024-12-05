@@ -443,7 +443,7 @@ def download_clean_preprocess_and_structure(data_conf, data_path, theme,
     """
 
     # unzip corresponding data
-    untar_specific_theme_data(data_conf["download_data_url"], data_path, theme)
+    untar_specific_theme_data(data_conf["DOWNLOAD_DATA_URL"], data_path, theme)
     print(f"\tData downloaded: Folder: {theme} and its subfolders extracted to {data_path}. Preparing...")
             
     # prepare data for analysis
@@ -480,7 +480,7 @@ def split_and_zip_files (file_path, save_path, theme):
     df = pd.read_parquet(file_path, engine = "pyarrow")
     
     # create file chunks
-    chunks = [df.iloc[i:i + 10000] for i in range(0, len(df), 10000)]
+    chunks = [df.iloc[i:i + 100] for i in range(0, len(df), 100)]
     
     # zip file chunks
     for idx, chunk in enumerate(chunks):
@@ -493,7 +493,7 @@ def split_and_zip_files (file_path, save_path, theme):
 
         # Compress each file into its own ZIP archive
         with zipfile.ZipFile(os.path.join(save_path,zip_name), 'w') as zipf:
-            zipf.write(os.path.join(save_path,file_name)) # csv file path
+            zipf.write(os.path.join(save_path,file_name), arcname=file_name) # csv file without path
 
         # remove csv file
         os.remove(os.path.join(save_path,file_name)) 

@@ -37,11 +37,11 @@ if "_" in role:
     if id:
 
         # select corresponding theme 
-        theme = data_conf["themes"][id]  
+        theme = data_conf["THEMES"][id]  
         print(f"Client{id}: Selected theme is: {theme}.")        
         
         # create destination folder to save data to analyze.
-        data_path = os.path.join(root_path, data_conf["data_path"])
+        data_path = os.path.join(root_path, data_conf["DATA_PATH"])
         os.makedirs(data_path, exist_ok=True)
  
         # create folder to save preprocess data
@@ -88,7 +88,7 @@ if "_" in role:
  
         # Send splitted and zipped data to the server
         print(f"Client{id}: Sending data to the server...")
-        mqttf.find_and_send_msg(conf, send_folder, f"Client_{id}")
+        mqttf.find_and_send_msg(conf, send_folder, f"Client_{id}")        
         print(f"Client{id}: END.")
         
        

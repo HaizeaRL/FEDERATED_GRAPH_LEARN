@@ -1,6 +1,6 @@
-download_data_url: "https://figshare.com/ndownloader/articles/6392078/versions/1"
-data_path: "data"
-themes:
+DOWNLOAD_DATA_URL: "https://figshare.com/ndownloader/articles/6392078/versions/1"
+DATA_PATH: "data"
+THEMES:
   "1": charliehebdo-all-rnr-threads
   "2": ebola-essien-all-rnr-threads
   "3": ferguson-all-rnr-threads
