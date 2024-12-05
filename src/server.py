@@ -30,3 +30,11 @@ while time.time() - start_time < conf["TIME_LISTENING_MESSAGES"]:
 
 # After the loop ends, you can manage receiving messages here
 print("Time's up! Starting to manage receiving messages...")
+
+# junta todo los datos recividos en un unico dataframe
+
+# preprocesa
+
+# entrena un modelo random forest
+
+# extrae las reglas o patrones que determinan que caracteristicas cumplen mensajes de rumores.
