@@ -50,14 +50,14 @@ def on_message (client, userdatata, message):
         # Save the binary data to a file   
         with open(os.path.join(save_path, filename), "wb") as file:
             file.write(file_data)
-            print(f"Message received from {client}. New filaname saved: {filename}")
+            print(f"Server: Message received from {client}. New filaname saved: {filename}")
 
     except json.JSONDecodeError:
-        print("Failed to parse JSON from message payload.")
+        print("Server: Failed to parse JSON from message payload.")
     except base64.binascii.Error:
-        print("Failed to decode Base64 string.")
+        print("Server: Failed to decode Base64 string.")
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"Server: An error occurred: {e}")
 
 
 def encode_zip_to_base64(zip_file_path):

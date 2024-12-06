@@ -54,6 +54,7 @@ This file contains configuration settings for MQTT communication between the cli
 - **MQTT_TOPIC**: The topic to subscribe to and listen for messages.
 - **MQTT_KEEPALIVE**: The keep-alive duration of the MQTT client, which helps maintain the connection.
 - **TIME_LISTENING_MESSAGES**: The maximum listening time for receiving messages.
+- **VISUALIZE_TREE**: Indicates whether the tree should be displayed or not.
 
 ### **data_config.yaml**
 
@@ -64,65 +65,100 @@ This file contains information about the datasets to be downloaded and analyzed.
 
 ## Installation and Run Steps
 
-To ensure a clean and isolated environment for this project, a `Dockerfile` is provided to launch Docker locally and run a Python 3.9 containers. This approach ensures that the local environment remains unaffected and that all dependencies are installed within the container.
+To ensure a clean and isolated environment for this project, a `Dockerfile` is provided to launch Docker locally and run Python 3.9 containers. This approach ensures that the local environment remains unaffected and that all dependencies are installed within the container.
+
+---
 
 ### Prerequisites:
 
-- **Docker** must be installed on your machine. You can download and install Docker from the [official website](https://www.docker.com/get-started).
+- **Docker** must be installed on your machine. Download and install Docker from the [official website](https://www.docker.com/get-started).
 
-### Building Client Docker Image
+---
 
-1. **Navigate to the Project Directory**:
+### Building and Running the Client Docker Image
+
+1. **Navigate to the Project Directory**  
    Open your terminal and navigate to the root directory of the project where the `Dockerfile` is located.
 
-2. **Build the Client Docker Image**:
-   Run the following command to build a client-type Docker image:
+2. **Build the Client Docker Image**  
+   Build a Docker image for the client using the following command:
    ```bash
    docker build -t client1 --build-arg ROLE=CLIENT_1 .
    ```
-   - The `ROLE=CLIENT_1` argument is passed to the Docker build process. This argument defines the role of the created Docker image as a client. The value `CLIENT_1` specifies that this particular instance will act as a client node. The ROLE environment variable is used to customize the image during the build, allowing it to behave as either a client or a server, depending on the value provided.
+   The ROLE=CLIENT_1 argument defines the role of the Docker image as a client. The identifier CLIENT_1 distinguishes this client instance from others. For additional client nodes, modify the identifier (e.g., CLIENT_2, CLIENT_3).
 
-   - The `1` in `CLIENT_1` is the identifier for this specific client node. It distinguishes this client from other nodes in the network, enabling the system to know which client is running. You can change the identifier for each client node (e.g., CLIENT_2, CLIENT_3) to create different client instances.
-
-   You can create as many client images as needed, following the same pattern:
+   Example for multiple client nodes:
    ```bash
    docker build -t <client_app_identification> --build-arg ROLE=CLIENT_<identification> .
    ```
+  The role is saved into a `role.txt` file in the container and used by the `dispatcher.py` script to determine execution behavior.
 
-   During the Docker image build process, the role is passed as a build argument and saved into the `role.txt` file inside the container. This file is then used later by the `dispatcher.py` script to decide the correct execution path.
 
-
-2. **Run the Client Docker Image**:
-    To run the client container, use the following command, replacing <client_app_identification> with the actual client image tag:
+3. **Run the Client Docker Image**
+    Launch the client container with this command:
     ```bash
     docker run -it --rm -v ${PWD}:/app <client_app_identification>
     ```
-    This will launch the client container and mount the current directory (${PWD}) into the /app directory inside the container. This allows the client to access the necessary files from the host system.
+    This will launch the client container and mount the current directory `${PWD}` into the `/app` directory inside the container. This allows the client to access the necessary files from the host system.
 
-### Building Server Docker Image
+### Building and Running the Server Docker Image
 
-1. **Navigate to the Project Directory**:
-   Open your terminal and navigate to the root directory of the project where the `Dockerfile` is located.
+### Visualizing Trees and Rules (VISUALIZE_TREE = 1)
 
-2. **Build the Client Docker Image**:
-   Run the following command to build a client-type Docker image:
+1. **Configure Matplotlib for Docker GUI Support: Install XLaunch**  
+   - Download and install **XLaunch** from the [Xming website](https://sourceforge.net/projects/xming/).  
+   - Configure XLaunch as follows:  
+     - Choose **"Multiple windows"**.  
+     - Set the display number to **0**.  
+     - Select **"Start No client"**.  
+     - Choose **"Native OpenGL"**.  
+     - Check **"No access control"**.
+
+2. **Get Your Windows IP Address**  
+   Run this command in Command Prompt to find your IP address:
+   ```bash
+   ipconfig
+   ```
+   Note the IPv4 Address (e.g., `192.168.1.100`).
+
+3. **Navigate to the Project Directory**:
+   Open your terminal and navigate to the root directory of the project.
+
+4. **Build the Server Docker Image**:
+   Use this command to build a server Docker image:
    ```bash
    docker build -t server --build-arg ROLE=SERVER .
    ```
-   - The `ROLE=SERVER` argument is passed to the Docker build process. The value `SERVER` specifies that this particular instance will act as a client node. The ROLE environment variable is used to customize the image during the build, allowing it to behave as either a client or a server, depending on the value provided.
-
    You must only create one.
    ```bash
    docker build -t <server_app_identification> --build-arg ROLE=SERVER .
    ```
-   During the Docker image build process, the role is passed as a build argument and saved into the `role.txt` file inside the container. This file is then used later by the `dispatcher.py` script to decide the correct execution path.
+
+5. **Run the Server Docker Image**:
+    Run the server container with GUI support:
+    ```bash
+    docker run --rm -it --env=DISPLAY=<ip_address>:0 -v="$(Get-Location):/app" <server_app_identification>
+    ```
+    Replace <ip_address> with your Windows IP address and <server_app_identification> with the actual server image tag.
+    This mounts the current directory `${PWD}` to `/app` inside the container, allowing access to necessary files and allows also to display the tree in apart panel.
+
+### Without Tree and Rules Visualization (VISUALIZE_TREE = 0)
+
+1. **Navigate to the Project Directory**:
+   Open your terminal and navigate to the root directory of the project.
+
+2. **Build the Server Docker Image**:
+   Build a server Docker image using:
+   ```bash
+   docker build -t server --build-arg ROLE=SERVER .
+   ```
 
 2. **Run the Server Docker Image**:
-    To run the server type container, use the following command, replacing <servert_app_identification> with the actual server image tag:
+    Launch the server container without GUI support:
     ```bash
     docker run -it --rm -v ${PWD}:/app <server_app_identification>
     ```
-    This will launch the server container and mount the current directory (${PWD}) into the /app directory inside the container. This allows the server to access the necessary files from the host system.
+    This mounts the current directory `${PWD}` to `/app` inside the container, allowing access to necessary files.
 
 
 ## Dispatcher Script Overview
